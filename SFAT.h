@@ -1,0 +1,101 @@
+
+// 文件系统属性
+#define CLUSTER_SIZE 4096 // 簇大小（4KB）
+#define MAX_CLUSTERS 16384 // 最大簇数（共64MB）
+#define DIRENTRY_SIZE 64 // 目录项大小（64字节）
+#define MAX_ROOT_FILES (ROOT_DIR_CLUSTERS * (CLUSTER_SIZE / DIRENTRY_SIZE)) // 根目录最大文件数
+#define MAX_FILENAME_LENGTH 16 // 文件名最大长度
+#define MAX_EXTENSION_LENGTH 4 // 文件扩展名最大长度
+#define MAX_OPEN_FILES 64 // 系统同时打开文件的最大数量
+#define MAX_USERS 128 // 最大用户数
+#define MAX_STACK_DEPTH 128 // 最大目录栈深度（0-127）
+
+// 文件名首字符定义
+#define UNUSED 0x00 // 未使用
+#define DELETED 0xE5 // 已删除
+// 文件类型
+#define SUBDIR 0x10 // 子目录
+#define ARCHIVE 0x20 // 文件
+// 文件权限
+#define READ 0x04   // 读权限
+#define WRITE 0x02  // 写权限
+#define EXEC 0x01   // 执行权限
+// 文件修改标志
+#define UNMODIFIED 0x00 // 文件未修改
+#define MODIFIED 0x01   // 文件已修改
+
+// FAT表项定义
+#define FAT_FREE 0x00000000 // 簇空闲
+#define EOF_CLUSTER 0xFFFFFFFF // 簇链结束标志
+
+// 磁盘布局
+#define USER_TABLE_CLUSTER 3 // 用户表簇号
+#define RESERVE_CLUSTERS 4 // 保留簇数
+
+#define FAT_START_CLUSTER RESERVE_CLUSTERS // FAT表起始簇号
+#define FAT_CLUSTERS 16 // FAT表占用簇数
+
+#define ROOT_DIR_START_CLUSTER (RESERVE_CLUSTERS + FAT_CLUSTERS) // 根目录起始簇号
+#define ROOT_DIR_CLUSTERS 4 // 根目录占用簇数
+
+#define DATA_START_CLUSTER (RESERVE_CLUSTERS + FAT_CLUSTERS + ROOT_DIR_CLUSTERS) // 数据区起始簇号
+
+// FAT表（占用16簇，每簇4096字节，共16384项）
+typedef struct FAT {
+    unsigned int entries[MAX_CLUSTERS];
+} FAT;
+
+// 目录项（64字节）
+typedef struct DirEntry {
+    char name[16]; // 文件或目录名称
+        // 首字节定义
+        // 0x00	未使用
+        // 0xE5	已删除
+    char extension[4]; // 文件扩展名（如果是目录则为空）
+    char type; // 文件类型
+        // 0x10	子目录
+        // 0x20	文件
+        
+    char owner; // 文件所有者的用户ID
+    char permission; // 文件权限--rwx
+
+    char createdTime[4];    // 创建时间
+    char modifiedTime[4];   // 最后修改时间
+    char accessedTime[4];   // 最后访问时间
+
+    unsigned int size;      // 文件大小，若为目录则为目录文件数
+    unsigned int startCluster; // 文件数据的起始簇号
+} DirEntry;
+
+// 目录
+typedef struct Directory {
+    DirEntry *entries;  // 目录项数组
+    int count; // 当前目录中的条目数量
+} Directory;
+
+// 用户（32字节）
+typedef struct User {
+    char username[14]; // 用户名
+    char password[14]; // 密码
+    char role; // 角色
+        // 0	0x01	管理员
+        // 1	0x02	普通用户
+    char userid;        // 用户ID
+} User;
+
+// 系统打开文件结构
+typedef struct OpenFile {
+    char modify_flag; // 修改标志
+    DirEntry *entry; // 打开的文件的目录项指针
+    unsigned int currentCluster; // 当前访问的簇号
+    unsigned int offset; // 当前访问的偏移量
+    unsigned int count;  // 文件被使用计数
+} OpenFile;
+
+extern Directory rootDirectory; // 根目录
+extern Directory *dirStack[MAX_STACK_DEPTH]; // 目录栈
+extern OpenFile openFiles[MAX_OPEN_FILES]; // 打开文件表
+extern User Users[MAX_USERS]; // 用户列表
+extern FILE *fd; // 磁盘文件指针
+extern char currentUserID; // 当前用户ID
+extern FAT fat; // FAT表
