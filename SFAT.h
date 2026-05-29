@@ -3,6 +3,8 @@
 #define CLUSTER_SIZE 4096 // 簇大小（4KB）
 #define MAX_CLUSTERS 16384 // 最大簇数（共64MB）
 #define DIRENTRY_SIZE 64 // 目录项大小（64字节）
+#define USER_SIZE 32 // 用户结构体大小（32字节）
+
 #define MAX_ROOT_FILES (ROOT_DIR_CLUSTERS * (CLUSTER_SIZE / DIRENTRY_SIZE)) // 根目录最大文件数
 #define MAX_FILENAME_LENGTH 16 // 文件名最大长度
 #define MAX_EXTENSION_LENGTH 4 // 文件扩展名最大长度
@@ -26,7 +28,7 @@
 
 // FAT表项定义
 #define FAT_FREE 0x00000000 // 簇空闲
-#define EOF_CLUSTER 0xFFFFFFFF // 簇链结束标志
+#define FAT_EOF 0xFFFFFFFF // 簇链结束标志
 
 // 磁盘布局
 #define USER_TABLE_CLUSTER 3 // 用户表簇号
@@ -40,10 +42,6 @@
 
 #define DATA_START_CLUSTER (RESERVE_CLUSTERS + FAT_CLUSTERS + ROOT_DIR_CLUSTERS) // 数据区起始簇号
 
-// FAT表（占用16簇，每簇4096字节，共16384项）
-typedef struct FAT {
-    unsigned int entries[MAX_CLUSTERS];
-} FAT;
 
 // 目录项（64字节）
 typedef struct DirEntry {
@@ -78,8 +76,8 @@ typedef struct User {
     char username[14]; // 用户名
     char password[14]; // 密码
     char role; // 角色
-        // 0	0x01	管理员
-        // 1	0x02	普通用户
+        // 0x01	管理员
+        // 0x02	普通用户
     char userid;        // 用户ID
 } User;
 
@@ -92,10 +90,20 @@ typedef struct OpenFile {
     unsigned int count;  // 文件被使用计数
 } OpenFile;
 
-extern Directory rootDirectory; // 根目录
-extern Directory *dirStack[MAX_STACK_DEPTH]; // 目录栈
-extern OpenFile openFiles[MAX_OPEN_FILES]; // 打开文件表
-extern User Users[MAX_USERS]; // 用户列表
-extern FILE *fd; // 磁盘文件指针
-extern char currentUserID; // 当前用户ID
-extern FAT fat; // FAT表
+typedef struct SFAT {
+    unsigned int *fat; // FAT表指针，指向fat数组（占用16簇，每簇4096字节，共16384项）
+    Directory rootDirectory;        // 根目录
+    Directory *dirStack[MAX_STACK_DEPTH]; // 目录栈
+    OpenFile openFiles[MAX_OPEN_FILES]; // 打开文件表
+    User Users[MAX_USERS]; // 用户列表
+    FILE *fd; // 磁盘文件指针
+    char currentUserID; // 当前用户ID
+} SFAT;
+
+extern SFAT sfat; // 声明全局SFAT结构体实例
+
+extern int format(); // 声明格式化函数
+extern int init(); // 声明初始化函数
+extern char *readCluster(unsigned int cluster, unsigned int n); // 声明读取簇函数
+extern Directory* dirFromDisk(unsigned int cluster); // 声明从磁盘读取目录
+extern int writeCluster(const char *buf, unsigned int cluster, unsigned int n); // 声明写入簇函数

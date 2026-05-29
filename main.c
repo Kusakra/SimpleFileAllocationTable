@@ -2,18 +2,25 @@
 
 #include"SFAT.h"
 
-
-Directory rootDirectory; // 根目录
-Directory *dirStack[MAX_STACK_DEPTH]; // 目录栈
-OpenFile openFiles[MAX_OPEN_FILES]; // 打开文件表
-User Users[MAX_USERS]; // 用户列表
-FILE *fd; // 磁盘文件指针
-char currentUserID; // 当前用户ID
-FAT fat; // FATs表
+SFAT sfat; // 定义全局SFAT结构体实例
 
 int main()
 {
+    sfat.fd = fopen("disk.img", "rw+b"); // 打开磁盘文件
+    if (sfat.fd == NULL) {
+        printf("Disk image not found. Creating a new one...\n");
+
+        sfat.fd = fopen("disk.img", "w+b"); // 如果文件不存在则创建新文件
+        if (sfat.fd == NULL) {
+            perror("Failed to open disk image");
+            return 1;
+        }
+        format(); // 格式化磁盘
+    }
+    else {
+        printf("Disk image found. Initializing...\n");
+        init(); // 初始化SFAT结构体
+    }
     
-    printf("Hello, World!\n");
     return 0;
 }
