@@ -107,6 +107,8 @@ typedef struct SFAT {
         不应被使用，最低应从24开始使用
     */
     unsigned int *fat; // FAT表指针，指向fat数组（占用16簇，每簇4096字节，共16384项）
+    unsigned int nextFreeCluster; // 下一个空闲簇号
+    unsigned int freeClusterCount; // 空闲簇数量
     Directory rootDirectory;        // 根目录
     Directory dirStack[MAX_STACK_DEPTH]; // 目录栈
     OpenFile openFiles[MAX_OPEN_FILES]; // 打开文件表
