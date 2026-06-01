@@ -1,6 +1,9 @@
 #include<stdio.h>
+#include<string.h>
 #include<stdlib.h>
 #include"SFAT.h"
+
+// 说明：按簇读写硬盘，先在内存中构建簇数据，最后一次性写入磁盘，减少磁盘I/O次数，提高性能
 
 // 从磁盘读取n个簇的数据并返回缓冲区指针，调用者负责释放内存
 char *readCluster(unsigned int cluster, unsigned int n) {
@@ -11,16 +14,18 @@ char *readCluster(unsigned int cluster, unsigned int n) {
 }
 
 // 将缓冲区的数据写入磁盘指定簇，n为簇数
-int writeCluster(const char *buf, unsigned int cluster, unsigned int n) {
+int writeCluster(const void *buf, unsigned int cluster, unsigned int n) {
     fseek(sfat.fd, cluster * CLUSTER_SIZE, SEEK_SET); // 将文件指针移动到指定簇的起始位置
     fwrite(buf, 1, n * CLUSTER_SIZE, sfat.fd); // 将缓冲区的数据写入磁盘
     return 0;
 }
 
-// 写入磁盘
-int writeToDisk() {
+
+
+// 保存完整数据到磁盘
+int saveToDisk() {
     // 写入FAT表
-    writeCluster((char *)sfat.fat, FAT_START_CLUSTER, FAT_CLUSTERS); // 将FAT表写入磁盘
+    writeCluster(sfat.fat, FAT_START_CLUSTER, FAT_CLUSTERS); // 将FAT表写入磁盘
 
     // 写入根目录
     char *buf = (char *)calloc(MAX_ROOT_FILES * DIRENTRY_SIZE, 1); // 分配并初始化根目录缓冲区
@@ -38,8 +43,8 @@ int writeToDisk() {
     writeCluster(buf, USER_TABLE_CLUSTER, 1); // 将用户表写入磁盘
     free(buf); // 释放用户表缓冲区
 
+    logger("USER TABLE SAVED.", LOG_INFO); // 记录日志
     // 写入文件
-
-    
+ 
     return 0;
 }

@@ -12,6 +12,14 @@
 #define MAX_USERS 128 // 最大用户数
 #define MAX_STACK_DEPTH 128 // 最大目录栈深度（0-127）
 
+// 用户角色定义
+#define ROLE_NULL 0x00 // 空，代表该项未使用
+#define ROLE_ADMIN 0x48 // 管理员
+#define ROLE_USER 0x52 // 普通用户
+
+// 用户ID定义
+#define NOT_LOGIN 0x44  // 未登录
+
 // 文件名首字符定义
 #define UNUSED 0x00 // 未使用
 #define DELETED 0xE5 // 已删除
@@ -41,6 +49,11 @@
 #define ROOT_DIR_CLUSTERS 4 // 根目录占用簇数
 
 #define DATA_START_CLUSTER (RESERVE_CLUSTERS + FAT_CLUSTERS + ROOT_DIR_CLUSTERS) // 数据区起始簇号
+
+#define LOG_NULL 0x00 // 日志关闭
+#define LOG_INFO 0x14 // 日志信息标志
+#define LOG_WARNING 0x50 // 日志调试标志
+#define LOG_ERROR 0x26 // 日志错误标志
 
 
 // 目录项（64字节）
@@ -76,10 +89,7 @@ typedef struct User {
     char username[14]; // 用户名
     char password[14]; // 密码
     char role; // 角色
-        // 0x00	未使用
-        // 0x01	管理员
-        // 0x02	普通用户
-    char userid;        // 用户ID
+    char userid;        // 用户ID，无特殊含义
 } User;
 
 // 系统打开文件结构
@@ -92,6 +102,10 @@ typedef struct OpenFile {
 } OpenFile;
 
 typedef struct SFAT {
+    /* 
+        尽管fat表共16384项，但0-23簇被系统占用，数据区从第24簇开始，因此索引0-23的FAT项
+        不应被使用，最低应从24开始使用
+    */
     unsigned int *fat; // FAT表指针，指向fat数组（占用16簇，每簇4096字节，共16384项）
     Directory rootDirectory;        // 根目录
     Directory dirStack[MAX_STACK_DEPTH]; // 目录栈
@@ -100,11 +114,16 @@ typedef struct SFAT {
     FILE *fd; // 磁盘文件指针
 } SFAT;
 
-extern SFAT sfat; // 声明全局SFAT结构体实例
-extern char currentUserID; // 声明当前用户ID
-extern Directory *currentDirectory; // 声明当前目录指针
-extern int format(); // 声明格式化函数
-extern int init(); // 声明初始化函数
-extern char *readCluster(unsigned int cluster, unsigned int n); // 声明读取簇函数
-extern Directory* dirFromDisk(unsigned int cluster); // 声明从磁盘读取目录
-extern int writeCluster(const char *buf, unsigned int cluster, unsigned int n); // 声明写入簇函数
+extern SFAT sfat;
+extern char currentUserID;
+extern unsigned short cdi;
+extern OpenFile NULL_FILE;
+extern User NULL_USER;
+extern int format();
+extern int load();
+extern int init();
+extern char *readCluster(unsigned int cluster, unsigned int n);
+extern int writeCluster(const void *buf, unsigned int cluster, unsigned int n);
+extern int saveToDisk();
+extern void logger(const char *message, char level);
+extern Directory* dirFromDisk(unsigned int cluster);

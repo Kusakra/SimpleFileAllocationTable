@@ -8,8 +8,8 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${workspaceFolder}\\main.c",
-                "${workspaceFolder}\\format.c",
                 "${workspaceFolder}\\init.c",
+                "${workspaceFolder}\\fileio.c",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"
             ],

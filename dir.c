@@ -1,6 +1,5 @@
 #include<stdio.h>
 #include<string.h>
-#include<stdlib.h>
 #include"SFAT.h"
 
 // 从磁盘读取目录，构建目录结构并返回目录结构指针
