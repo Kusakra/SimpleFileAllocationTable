@@ -76,6 +76,7 @@ typedef struct User {
     char username[14]; // 用户名
     char password[14]; // 密码
     char role; // 角色
+        // 0x00	未使用
         // 0x01	管理员
         // 0x02	普通用户
     char userid;        // 用户ID
@@ -93,15 +94,15 @@ typedef struct OpenFile {
 typedef struct SFAT {
     unsigned int *fat; // FAT表指针，指向fat数组（占用16簇，每簇4096字节，共16384项）
     Directory rootDirectory;        // 根目录
-    Directory *dirStack[MAX_STACK_DEPTH]; // 目录栈
+    Directory dirStack[MAX_STACK_DEPTH]; // 目录栈
     OpenFile openFiles[MAX_OPEN_FILES]; // 打开文件表
     User Users[MAX_USERS]; // 用户列表
     FILE *fd; // 磁盘文件指针
-    char currentUserID; // 当前用户ID
 } SFAT;
 
 extern SFAT sfat; // 声明全局SFAT结构体实例
-
+extern char currentUserID; // 声明当前用户ID
+extern Directory *currentDirectory; // 声明当前目录指针
 extern int format(); // 声明格式化函数
 extern int init(); // 声明初始化函数
 extern char *readCluster(unsigned int cluster, unsigned int n); // 声明读取簇函数

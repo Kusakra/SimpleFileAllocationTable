@@ -3,6 +3,8 @@
 #include"SFAT.h"
 
 SFAT sfat; // 定义全局SFAT结构体实例
+char currentUserID; // 当前用户ID
+unsigned short cdi; // 当前目录指针索引currentDirectoryIndex，结合目录栈sfat.dirStack[cdi]
 
 int main()
 {
