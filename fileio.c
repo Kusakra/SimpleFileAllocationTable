@@ -32,12 +32,33 @@ unsigned int findFreeCluster() {
         return tmp; // 返回最后一个空闲簇号
     }
 
-
     unsigned int allocatedCluster = sfat.nextFreeCluster;
-    unsigned int nextCluster = sfat.fat[allocatedCluster]; // 获取下一个空闲簇号
-    
+    int found_cluster = -1;
+    unsigned int idx;
+    // [allocatedCluster + 1, max)
+    for (idx = allocatedCluster + 1; idx < MAX_CLUSTERS; idx++) { // 从下一个簇开始寻找空闲簇
+        if (sfat.fat[idx] == FAT_FREE) { // 如果找到一个空闲簇
+            found_cluster = 1;
+            break;
+        }
+    }
+    // [24, allocatedCluster)，从数据区开始寻找空闲簇
+    if (found_cluster == -1) {
+        for (idx = 24; idx < allocatedCluster; idx++) { // 从数据区开始寻找空闲簇
+            if (sfat.fat[idx] == FAT_FREE) { // 如果找到一个空闲簇
+                found_cluster = 1;
+                break;
+            }
+        }
+    }
+    if (found_cluster == 1) {
+        sfat.nextFreeCluster = idx; // 更新下一个空闲簇号
+        sfat.freeClusterCount--; // 更新空闲簇数量
+        return allocatedCluster; // 返回分配的簇号
+    }
 
-    return FAT_EOF; // 没有空闲簇
+    logger("FAT表与磁盘空闲簇计数不匹配", LOG_WARNING);
+    return FAT_EOF; // 如果没有找到空闲簇，返回FAT_EOF
 }
 
 
@@ -50,7 +71,11 @@ int writeFileToDisk(DirEntry *entry, const void *buf) {
     unsigned int clusters[clustersNeeded]; // 存储分配的簇号
     int idx = 0; // 分配簇的索引
     // 分配簇链
+    logger("CLUSTERS ALLOCATING.", LOG_INFO);
     while (cluster != FAT_EOF) { // 循环分配簇，直到分配足够的簇或遇到FAT_EOF
+        if (idx >= clustersNeeded) { // 如果已经分配足够的簇，跳出循环
+            break;
+        }
         clusters[idx++] = cluster; // 将当前簇号存储到数组中
         cluster = sfat.fat[cluster]; // 获取下一个簇号
     }
@@ -67,14 +92,29 @@ int writeFileToDisk(DirEntry *entry, const void *buf) {
         }
     }
     else if (cluster != FAT_EOF) {  // 文件变小，释放多余的簇
-        for (unsigned int i = clustersNeeded; i < idx; i++) {
-            sfat.fat[clusters[i]] = FAT_FREE; // 将多余簇的FAT项设置为FAT_FREE
+        while (cluster != FAT_EOF) { // 循环释放多余的簇，直到遇到FAT_EOF
+            unsigned int nextCluster = sfat.fat[cluster]; // 获取下一个簇号
+            sfat.fat[cluster] = FAT_FREE; // 将当前簇的FAT项设置为FAT_FREE，表示空闲
+            cluster = nextCluster; // 移动到下一个簇
         }
     }
 
-    for (unsigned int i = 0; i < clustersNeeded; i++) {
-        writeCluster((char *)buf + i * CLUSTER_SIZE, cluster, 1); // 将数据写入当前簇
-        cluster = sfat.fat[cluster]; // 获取下一个簇号
+    // 文件写入对应簇链，优先一次性写入连续簇链以优化写入性能
+    unsigned int li = 0; // 记录当前连续区间的起点
+    for (unsigned int ri = 0; ri < clustersNeeded; ri++) {
+        // 触发写入的两个条件：
+        // 1. 已经到达最后一个簇 (ri == clustersNeeded - 1)
+        // 2. 下一个簇不连续了 (clusters[ri + 1] != clusters[ri] + 1)
+        if (ri == clustersNeeded - 1 || clusters[ri + 1] != clusters[ri] + 1) {
+            unsigned int count = ri - li + 1;         // 计算这一批连续了多少个簇
+            unsigned int offset = li * CLUSTER_SIZE;   // 计算当前批次在内存缓冲中的偏移量
+            
+            // 发起单次批量 I/O 写入
+            writeCluster(buf + offset, clusters[li], count);
+            
+            // 左指针跳到下一个位置
+            li = ri + 1; 
+        }
     }
     return 0;
 }
@@ -102,6 +142,6 @@ int saveToDisk() {
 
     logger("USER TABLE SAVED.", LOG_INFO); // 记录日志
     // 写入文件
- 
+
     return 0;
 }
