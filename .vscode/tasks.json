@@ -10,6 +10,8 @@
                 "${workspaceFolder}\\main.c",
                 "${workspaceFolder}\\init.c",
                 "${workspaceFolder}\\fileio.c",
+                "${workspaceFolder}\\path.c",
+                "${workspaceFolder}\\dir.c",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"
             ],
