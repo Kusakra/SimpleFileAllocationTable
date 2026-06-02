@@ -113,45 +113,8 @@ int write_file(int fd, const void *buffer, int size) {
         return -1;
     }
 
-    int written = 0;
-    const char *src = (const char *)buffer;
-    unsigned int current_cluster = open_file_table[fd].start_cluster;
-    unsigned int offset_in_file = open_file_table[fd].position;
-
-    while (written < size) {
-        // TODO: 如果位置超过文件大小，需要分配新簇
-        if (offset_in_file >= open_file_table[fd].size) {
-            // 需要分配新簇，调用 fat.c 中的函数
-        }
-
-        char *block = readCluster(current_cluster, 1);
-        if (!block) {
-            return -1;
-        }
-
-        int offset_in_cluster = offset_in_file % CLUSTER_SIZE;
-        int chunk = CLUSTER_SIZE - offset_in_cluster;
-        if (chunk > size - written) chunk = size - written;
-
-        memcpy(block + offset_in_cluster, src + written, chunk);
-        if (writeCluster(block, current_cluster, 1) != 0) {
-            return -1;
-        }
-
-        written += chunk;
-        offset_in_file += chunk;
-        if (offset_in_file > open_file_table[fd].size) {
-            open_file_table[fd].size = offset_in_file;
-        }
-        
-        // TODO: 获取下一个簇
-        // current_cluster = sfat.fat[current_cluster];
-    }
-
-    open_file_table[fd].position = offset_in_file;
-    // TODO: 更新目录项中文件的大小
-    // update_directory_entry_size(open_file_table[fd].filename, open_file_table[fd].size);
-    return written;
+    sfat.openFiles[fd].entry->size = size; // 更新目录项中的文件大小
+    return writeFileToDisk(sfat.openFiles[fd].entry, buffer);
 }
 
 int delete_file(const char *path, char user_id) {

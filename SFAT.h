@@ -1,3 +1,5 @@
+#ifndef SFAT_H
+#define SFAT_H
 
 // 文件系统属性
 #define CLUSTER_SIZE 4096 // 簇大小（4KB）
@@ -129,3 +131,9 @@ extern int writeCluster(const void *buf, unsigned int cluster, unsigned int n);
 extern int saveToDisk();
 extern void logger(const char *message, char level);
 extern Directory* dirFromDisk(unsigned int cluster);
+extern int writeFAT();
+extern int writeRootDirectory();
+extern int writeUserTable();
+extern int writeFileToDisk(DirEntry *entry, const void *buf);
+
+#endif // SFAT_H
