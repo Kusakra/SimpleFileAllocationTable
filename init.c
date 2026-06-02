@@ -100,5 +100,8 @@ int format()
     free(buf); // 释放根目录缓冲区
     
     // 数据区（#24-...）已经在FAT表中设置为FAT_FREE，无需额外操作
+    buf = (char *)calloc(CLUSTER_SIZE, 1); // 分配并初始化数据区缓冲区
+    writeCluster(buf, MAX_CLUSTERS - 1, 1); // 将数据区写入磁盘，初始状态为全0表示所有簇空闲
+    free(buf); // 释放数据区缓冲区
     return 0;
 }
