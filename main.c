@@ -12,9 +12,40 @@ int main()
 {
     LOG_STATUS = LOG_INFO; // 设置日志状态为信息级别
     init(); // 初始化系统，加载变量，加载磁盘
-    
+    init_open_file_table();
+    init_user_system();
 
-    saveToDisk(); // 将内存中的数据保存到磁盘
+    // 菜单循环
+    int choice;
+    while (1) {
+        printf("\n===== SFAT FILE SYSTEM MENU =====\n");
+        printf("1. File Operations\n");
+        printf("2. User Operations\n");
+        printf("0. Exit\n");
+        printf("=================================\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        getchar();  // consume newline
+
+        switch (choice) {
+            case 1:
+                // 调用 file 模块的菜单
+                fileMenu();
+                break;
+            case 2:
+                // 调用 user 模块的菜单
+                userMenu();
+                break;
+            case 0:
+                printf("[INFO] Saving to disk and exiting...\n");
+                saveToDisk();
+                return 0;
+            default:
+                printf("[ERROR] Invalid choice!\n");
+        }
+    }
+
+    saveToDisk();
     return 0;
 }
 
@@ -26,10 +57,15 @@ void logger(const char *message, char level) {
     switch (level) {
         case LOG_ERROR:
             printf("[ERROR] %s\n", message);
+            break;  // 添加
         case LOG_WARNING:
             printf("[WARNING] %s\n", message);
+            break;  // 添加
         case LOG_INFO:
-            printf("[INFO] %s\n", message); break;
-        default: printf("[UNKNOWN] %s\n", message); break;
+            printf("[INFO] %s\n", message);
+            break;
+        default:
+            printf("[UNKNOWN] %s\n", message);
+            break;
     }
 }
