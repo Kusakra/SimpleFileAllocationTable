@@ -2,6 +2,7 @@
 #include"SFAT.h"
 #include"file.h"
 #include"user.h"
+#include"shell.h"
 
 SFAT sfat; // 定义全局SFAT结构体实例
 char currentUserID; // 当前用户ID
@@ -12,10 +13,12 @@ char LOG_STATUS;// 定义一个全局的日志状态变量，0表示关闭日志
 
 int main()
 {
-    LOG_STATUS = LOG_INFO; // 设置日志状态为信息级别
+    LOG_STATUS = LOG_INFO;
     init(); // 初始化系统，加载变量，加载磁盘
     init_open_file_table();
     init_user_system();
+
+    print_banner(); // 显示欢迎横幅
 
     // 菜单循环
     int choice;
@@ -23,24 +26,24 @@ int main()
         printf("\n===== SFAT FILE SYSTEM MENU =====\n");
         printf("1. File Operations\n");
         printf("2. User Operations\n");
+        printf("3. Shell Command Mode\n");
         printf("0. Exit\n");
         printf("=================================\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
-        getchar();  // consume newline
+        getchar();
 
         switch (choice) {
             case 1:
-                // 调用 file 模块的菜单
-                fileMenu();
-                break;
+                fileMenu(); break;
             case 2:
-                // 调用 user 模块的菜单
-                userMenu();
-                break;
+                userMenu(); break;
+            case 3:
+                shell_loop(); break;
             case 0:
                 printf("[INFO] Saving to disk and exiting...\n");
                 saveToDisk();
+                system_cleanup();
                 return 0;
             default:
                 printf("[ERROR] Invalid choice!\n");
