@@ -56,15 +56,16 @@ static void compactDirectory(Directory *dir, int index) {
 }
 
 // 找到一个空闲簇并标记为 FAT_EOF
-static unsigned int allocateCluster() {
-    for (unsigned int i = DATA_START_CLUSTER; i < MAX_CLUSTERS; i++) {
-        if (sfat.fat[i] == FAT_FREE) {
-            sfat.fat[i] = FAT_EOF;
-            return i;
-        }
-    }
-    return FAT_EOF;
-}
+// 由fileio.c中的findFreeCluster函数替代，保持单一职责
+// static unsigned int allocateCluster() {
+//     for (unsigned int i = DATA_START_CLUSTER; i < MAX_CLUSTERS; i++) {
+//         if (sfat.fat[i] == FAT_FREE) {
+//             sfat.fat[i] = FAT_EOF;
+//             return i;
+//         }
+//     }
+//     return FAT_EOF;
+// }
 
 // 释放簇链
 static void freeClusterChain(unsigned int startCluster) {
@@ -208,7 +209,7 @@ int mkdir(const char *name) {
         return 1;
     }
 
-    unsigned int newCluster = allocateCluster();
+    unsigned int newCluster = findFreeCluster();
     if (newCluster == FAT_EOF) {
         logger("No free clusters available.", LOG_ERROR);
         if (needsFree) {

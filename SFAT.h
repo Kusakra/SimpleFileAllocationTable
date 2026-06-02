@@ -123,17 +123,28 @@ extern char currentUserID;
 extern unsigned short cdi;
 extern OpenFile NULL_FILE;
 extern User NULL_USER;
+
+extern void logger(const char *message, char level);
+// init.c
 extern int format();
 extern int load();
 extern int init();
+// fileio.c
 extern char *readCluster(unsigned int cluster, unsigned int n);
 extern int writeCluster(const void *buf, unsigned int cluster, unsigned int n);
-extern int saveToDisk();
-extern void logger(const char *message, char level);
-extern Directory* dirFromDisk(unsigned int cluster);
+extern int findFreeCluster();
+extern int writeFileToDisk(DirEntry *entry, const void *buf);
 extern int writeFAT();
 extern int writeRootDirectory();
 extern int writeUserTable();
-extern int writeFileToDisk(DirEntry *entry, const void *buf);
+extern int saveToDisk();
+// dir.c
+extern Directory* dirFromDisk(unsigned int cluster);
+extern int mkdir(const char *name);
+extern int rmdir(const char *name);
+extern int dir(const char *path);
+extern int cd(const char *path);
+extern int create_file(const char *name);
+extern int delete_file(const char *path, char user_id);
 
 #endif // SFAT_H

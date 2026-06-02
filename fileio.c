@@ -57,7 +57,7 @@ unsigned int findFreeCluster() {
         return allocatedCluster; // 返回分配的簇号
     }
 
-    logger("FAT表与磁盘空闲簇计数不匹配", LOG_WARNING);
+    logger("FAT表与磁盘空闲簇计数不匹配", LOG_ERROR);
     return FAT_EOF; // 如果没有找到空闲簇，返回FAT_EOF
 }
 
@@ -158,6 +158,6 @@ int saveToDisk() {
     logger("USER TABLE SAVED.", LOG_INFO); // 记录日志
     // 写入文件
 
-    
+
     return 0;
 }
