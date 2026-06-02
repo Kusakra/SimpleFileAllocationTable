@@ -43,7 +43,6 @@ int main()
             case 0:
                 printf("[INFO] Saving to disk and exiting...\n");
                 saveToDisk();
-                system_cleanup();
                 return 0;
             default:
                 printf("[ERROR] Invalid choice!\n");
