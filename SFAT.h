@@ -84,6 +84,7 @@ typedef struct DirEntry {
 typedef struct Directory {
     DirEntry *entries;  // 目录项数组
     int count; // 当前目录中的条目数量
+    unsigned int cluster;   // 新增
 } Directory;
 
 // 用户（32字节）

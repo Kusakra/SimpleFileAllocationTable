@@ -1,0 +1,22 @@
+先检查当前状态
+
+git status
+新建分支（推荐）
+
+git checkout -b feature/file-user
+添加或修改文件
+
+新建：file.c、user.c、file.h、user.h
+修改：在 VS Code 直接编辑现有文件
+追踪并提交
+
+git add file.c user.c file.h user.h
+git commit -m "Add file and user management modules"
+推送分支
+
+git push -u origin feature/file-user
+
+
+git config --global user.name "minniecha"
+git config --global user.email "1361390999@qq.com"
+git commit -m "Add file and user management modules"

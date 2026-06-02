@@ -55,7 +55,7 @@ int resolvePath(const char *path, Directory *baseDir, unsigned int baseCluster, 
         usesStack = 0;
     } else {
         for (int i = 0; i <= baseIndex; i++) {
-            clusterStack[i] = dirClusterStack[i];
+            clusterStack[i] = sfat.dirStack[i].cluster;
         }
     }
 

@@ -1,0 +1,138 @@
+====== SFAT 文件系统测试案例 ======
+
+【第一阶段】基础登录测试
+================================
+1. 程序启动，主菜单选择：2 (User Operations)
+2. 选择：1 (Login)
+3. 输入用户名：admin
+4. 输入密码：admin
+5. 返回主菜单（选 2 再选 0）
+6. 选择：2 (User Operations)，再选 3 (Show current user) 确认已登录
+
+【第二阶段】文件创建和写入测试
+================================
+1. 主菜单选择：1 (File Operations)
+2. 选择：1 (Create file)
+3. 输入文件路径：test.txt
+4. 成功提示后，选择：8 (List files) 验证文件已创建
+
+5. 选择：2 (Open file)
+6. 输入文件路径：test.txt
+7. 输入模式：1 (WRITE)
+8. 记录返回的 FD（应该是 0）
+
+9. 选择：5 (Write file)
+10. 输入文件描述符：0
+11. 输入数据：Hello World! This is a test file.
+12. 确认写入成功
+
+13. 选择：3 (Close file)
+14. 输入文件描述符：0
+15. 关闭成功
+
+【第三阶段】文件读取测试
+================================
+1. 选择：2 (Open file)
+2. 输入文件路径：test.txt
+3. 输入模式：0 (READ)
+4. 记录返回的 FD（应该是 0）
+
+5. 选择：4 (Read file)
+6. 输入文件描述符：0
+7. 输入读取大小：50
+8. 验证读到内容：Hello World! This is a test file.
+
+9. 选择：3 (Close file)
+10. 输入文件描述符：0
+
+【第四阶段】多文件测试
+================================
+1. 选择：1 (Create file)
+2. 输入文件路径：readme.txt
+
+3. 选择：1 (Create file)
+4. 输入文件路径：data.txt
+
+5. 选择：8 (List files)
+6. 验证列表中有三个文件：test.txt、readme.txt、data.txt
+
+【第五阶段】Seek 功能测试
+================================
+1. 选择：2 (Open file)
+2. 输入文件路径：test.txt
+3. 输入模式：0 (READ)
+4. 记录 FD
+
+5. 选择：4 (Read file)
+6. 输入 FD：0
+7. 输入大小：5
+8. 应该读到：Hello
+
+9. 选择：7 (Seek file)
+10. 输入 FD：0
+11. 输入偏移量：6
+12. 输入 whence：0 (SEEK_SET)
+13. 验证新位置为 6
+
+14. 选择：4 (Read file)
+15. 输入 FD：0
+16. 输入大小：5
+17. 应该读到：World
+
+18. 选择：3 (Close file)
+19. 输入 FD：0
+
+【第六阶段】APPEND 模式测试
+================================
+1. 选择：2 (Open file)
+2. 输入文件路径：test.txt
+3. 输入模式：2 (APPEND)
+4. 记录 FD
+
+5. 选择：5 (Write file)
+6. 输入 FD：0
+7. 输入数据：(Added at end)
+8. 确认写入成功
+
+9. 选择：3 (Close file)
+10. 输入 FD：0
+
+11. 选择：2 (Open file)
+12. 输入文件路径：test.txt
+13. 输入模式：0 (READ)
+14. 记录 FD
+
+15. 选择：4 (Read file)
+16. 输入 FD：0
+17. 输入大小：100
+18. 验证内容包含原有 + 追加的部分
+
+19. 选择：3 (Close file)
+20. 输入 FD：0
+
+【第七阶段】登出测试
+================================
+1. 主菜单选择：1 (File Operations)
+2. 应该提示 [ERROR] Please login first!
+3. 说明需要重新登录
+
+4. 主菜单选择：2 (User Operations)
+5. 选择：2 (Logout)
+6. 登出成功
+
+7. 主菜单选择：0 (Exit)
+8. 程序终止
+
+====== 预期结果总结 ======
+✓ 成功登录 admin 账户
+✓ 创建 test.txt、readme.txt、data.txt 三个文件
+✓ 向 test.txt 写入 "Hello World! This is a test file."
+✓ 从 test.txt 读取完整内容
+✓ 使用 Seek 定位到位置 6，读取 "World"
+✓ APPEND 模式追加 "(Added at end)"
+✓ 验证追加后的文件内容包含两部分
+✓ 文件列表显示所有创建的文件
+✓ 登出后无法进行文件操作
+✓ 程序正常退出
+
+======================================

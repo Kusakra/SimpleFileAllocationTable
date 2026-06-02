@@ -19,23 +19,23 @@ int init() {
     }
 
     // 打开或创建磁盘文件
-    sfat.fd = fopen("disk.img", "rw+b"); // 打开磁盘文件
+    sfat.fd = fopen("disk.img", "r+b");  // 打开磁盘文件进行读写
     if (sfat.fd == NULL) {
         logger("Disk image not found. Creating a new one...", LOG_INFO);
-
-        sfat.fd = fopen("disk.img", "w+b"); // 如果文件不存在则创建新文件
+        sfat.fd = fopen("disk.img", "w+b");  // 创建新文件
         if (sfat.fd == NULL) {
             logger("Failed to open disk image.", LOG_ERROR);
             return 1;
         }
-        format(); // 格式化磁盘
+        format();  // 格式化磁盘
         logger("Disk image created and formatted.", LOG_INFO);
     }
     else {
         logger("Disk image found. Initializing...", LOG_INFO);
-        load(); // 加载磁盘到内存
+        load();  // 加载磁盘到内存
         logger("Initialization complete.", LOG_INFO);
     }
+    return 0;  // 添加这一行
 }
 
 // 加载磁盘到内存
@@ -57,16 +57,7 @@ int load() {
         entry = (DirEntry *)((char *)entry + DIRENTRY_SIZE); // 移动到下一个目录项
     }
     free(buf); // 释放缓冲区
-
-    // 初始化目录栈，初始时只有根目录
-    sfat.dirStack[0] = sfat.rootDirectory; // 将根目录压入目录栈
-
-    // 初始化用户表
-    buf = readCluster(USER_TABLE_CLUSTER, 1); // 从磁盘读取用户表数据到缓冲区
-    for (int i = 0; i < MAX_USERS; i++) {
-        memcpy(&sfat.Users[i], buf + i * USER_SIZE, sizeof(User)); // 将用户表数据复制到内存
-    }
-    free(buf); // 释放缓冲区
+    return 0;  // 添加这一行
 }
 
 // 初始化磁盘，格式化文件系统
