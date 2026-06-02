@@ -239,6 +239,8 @@ int mkdir(const char *name) {
 
     if (isRoot) {
         writeDirectoryToDisk(currentDir, ROOT_DIR_START_CLUSTER, ROOT_DIR_CLUSTERS);
+        sfat.rootDirectory = *currentDir;
+        sfat.dirStack[0] = sfat.rootDirectory;
     } else {
         writeDirectoryToDisk(currentDir, currentCluster, 1);
     }
@@ -314,6 +316,8 @@ int rmdir(const char *name) {
 
     if (isRoot) {
         writeDirectoryToDisk(currentDir, ROOT_DIR_START_CLUSTER, ROOT_DIR_CLUSTERS);
+        sfat.rootDirectory = *currentDir;
+        sfat.dirStack[0] = sfat.rootDirectory;
     } else {
         writeDirectoryToDisk(currentDir, currentCluster, 1);
     }
