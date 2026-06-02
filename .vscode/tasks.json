@@ -12,6 +12,8 @@
                 "${workspaceFolder}\\fileio.c",
                 "${workspaceFolder}\\path.c",
                 "${workspaceFolder}\\dir.c",
+                "${workspaceFolder}\\file.c",
+                "${workspaceFolder}\\user.c",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"
             ],
