@@ -30,5 +30,6 @@ int write_file(int fd, const void *buffer, int size);
 int delete_file(const char *path, char user_id);
 int file_seek(int fd, int offset, int whence);
 int get_open_file_size(int fd);
+void fileMenu(void);
 
 #endif // FILE_H

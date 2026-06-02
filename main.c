@@ -1,5 +1,7 @@
 #include<stdio.h>
 #include"SFAT.h"
+#include"file.h"
+#include"user.h"
 
 SFAT sfat; // 定义全局SFAT结构体实例
 char currentUserID; // 当前用户ID
