@@ -19,7 +19,7 @@ int init() {
     }
 
     // 打开或创建磁盘文件
-    sfat.fd = fopen("disk.img", "rb+"); // 打开磁盘文件
+    sfat.fd = fopen("disk.img", "rw+b"); // 打开磁盘文件
     if (sfat.fd == NULL) {
         logger("Disk image not found. Creating a new one...", LOG_INFO);
 
@@ -30,19 +30,26 @@ int init() {
         }
         format(); // 格式化磁盘
         logger("Disk image created and formatted.", LOG_INFO);
-        load(); // 初始化内存结构，避免后续操作空指针
     }
     else {
         logger("Disk image found. Initializing...", LOG_INFO);
-        load(); // 加载磁盘到内存
-        logger("Initialization complete.", LOG_INFO);
     }
 
+    load(); // 初始化内存结构，避免后续操作空指针
+    logger("Initialization complete.", LOG_INFO);
     return 0;
 }
 
 // 加载磁盘到内存
 int load() {
+    char *buf;
+
+    // 从磁盘读取配置区（#1）
+    buf = (char *)readCluster(1, 1); // 从磁盘读取配置区数据到缓冲区    
+    memcpy(&sfat.nextFreeCluster, buf, sizeof(unsigned int)); // 从配置区数据中读取下一个空闲簇号
+    memcpy(&sfat.freeClusterCount, buf + 4, sizeof(unsigned int)); // 从配置区数据中读取空闲簇数量
+    free(buf); // 释放配置区缓冲区
+
     // 从磁盘读取FAT表到内存
     sfat.fat = (unsigned int *)readCluster(FAT_START_CLUSTER, FAT_CLUSTERS); // 从磁盘读取FAT表到内存
 
@@ -50,7 +57,7 @@ int load() {
     sfat.rootDirectory.entries = (DirEntry *)calloc(MAX_ROOT_FILES, sizeof(DirEntry)); // 分配根目录项数组
     sfat.rootDirectory.count = 0; // 初始化根目录项数量为0
     // 读取根目录
-    char *buf = readCluster(ROOT_DIR_START_CLUSTER, ROOT_DIR_CLUSTERS); // 从磁盘读取根目录数据到缓冲区
+    buf = readCluster(ROOT_DIR_START_CLUSTER, ROOT_DIR_CLUSTERS); // 从磁盘读取根目录数据到缓冲区
     DirEntry *entry = (DirEntry *)buf; // 将缓冲区数据解释
     while (entry->name[0] != UNUSED) { // 循环读取根目录项，直到遇到未使用标志
         if (entry->name[0] == DELETED) { // 跳过已删除的目录项
@@ -78,6 +85,15 @@ int load() {
 // 初始化磁盘，格式化文件系统
 int format()
 {
+    char *buf;
+
+    // 初始化配置区（#1）
+    buf = (char *)calloc(CLUSTER_SIZE, 1); // 分配并初始化配置区缓冲区
+    memcpy(buf, &(unsigned int){24}, sizeof(unsigned int)); // 数据区起始簇号
+    memcpy(buf + 4, &(unsigned int){MAX_CLUSTERS - 24}, sizeof(unsigned int)); // 数据区空闲簇数量
+    writeCluster(buf, 1, 1); // 将配置区数据写入磁盘
+    free(buf); // 释放配置区缓冲区
+
     // 初始化用户表（#3）
     User admin;
     strcpy(admin.username, "admin");
@@ -85,7 +101,7 @@ int format()
     admin.role = 0x01; // 管理员角色
     admin.userid = 0x01;
 
-    char *buf = (char *)calloc(CLUSTER_SIZE, 1); // 分配并初始化用户表缓冲区
+    buf = (char *)calloc(CLUSTER_SIZE, 1); // 分配并初始化用户表缓冲区
     memcpy(buf, &admin, sizeof(User)); // 将管理员用户数据复制到缓冲区
     writeCluster(buf, USER_TABLE_CLUSTER, 1); // 将用户表写入磁盘
     free(buf); // 释放用户表缓冲区
