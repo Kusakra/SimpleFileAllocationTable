@@ -132,7 +132,7 @@ extern int init();
 // fileio.c
 extern char *readCluster(unsigned int cluster, unsigned int n);
 extern int writeCluster(const void *buf, unsigned int cluster, unsigned int n);
-extern int findFreeCluster();
+extern unsigned int findFreeCluster();
 extern int writeFileToDisk(DirEntry *entry, const void *buf);
 extern int writeFAT();
 extern int writeRootDirectory();
@@ -146,5 +146,9 @@ extern int dir(const char *path);
 extern int cd(const char *path);
 extern int create_file(const char *name);
 extern int delete_file(const char *path, char user_id);
+// path.c
+extern int parsePathSegment(const char *path, int *offset, char *segment, size_t segmentSize);
+extern int resolvePath(const char *path, Directory *baseDir, unsigned int baseCluster, int baseIndex,
+                Directory **outDir, unsigned int *outCluster, int *outIsRoot, int *outNeedsFree);
 
 #endif // SFAT_H
