@@ -9,7 +9,7 @@ void list_root_files(void);
 static DirEntry *find_entry_in_dir(Directory *dir, const char *name);
 static unsigned int get_cluster_at_index(unsigned int start_cluster, unsigned int index);
 static unsigned int get_last_cluster(unsigned int start_cluster);
-static unsigned int allocate_data_cluster(void);
+// static unsigned int allocate_data_cluster(void);
 static OpenFileEntry open_file_table[MAX_OPEN_FILES];
 
 int init_open_file_table(void) {
@@ -48,7 +48,7 @@ int create_file(const char *path, char user_id) {
         return -1;
     }
 
-    unsigned int cluster = allocate_data_cluster();
+    unsigned int cluster = findFreeCluster();
     if (cluster == FAT_EOF) {
         return -1;
     }
@@ -188,6 +188,10 @@ int write_file(int fd, const void *buffer, int size) {
         return -1;
     }
 
+    entry->size = size;
+    writeFileToDisk(entry, buffer);
+    // 写入文件由fileio.c中的writeFileToDisk函数替代，保持单一职责
+    /*
     unsigned int current_cluster = entry->startCluster;
     unsigned int offset = 0;
     int to_write = size;
@@ -207,7 +211,7 @@ int write_file(int fd, const void *buffer, int size) {
 
         if (to_write > 0) {
             if (sfat.fat[current_cluster] == FAT_EOF) {
-                unsigned int next_cluster = allocate_data_cluster();
+                unsigned int next_cluster = findFreeCluster();
                 if (next_cluster == FAT_EOF) {
                     printf("[DEBUG] Cannot allocate more clusters\n");
                     return -1;
@@ -234,6 +238,7 @@ int write_file(int fd, const void *buffer, int size) {
     }
 
     printf("[INFO] Wrote %d bytes to file\n", written);
+    */
     return 0;
 }
 
@@ -436,16 +441,17 @@ static unsigned int get_last_cluster(unsigned int start_cluster) {
     return cluster;
 }
 
-static unsigned int allocate_data_cluster(void) {
-    unsigned int firstDataCluster = ROOT_DIR_START_CLUSTER + ROOT_DIR_CLUSTERS;
-    for (unsigned int i = firstDataCluster; i < MAX_CLUSTERS; i++) {
-        if (sfat.fat[i] == FAT_FREE) {
-            sfat.fat[i] = FAT_EOF;
-            return i;
-        }
-    }
-    return FAT_EOF;
-}
+// 寻找空闲簇由fileio.c中的findFreeCluster函数替代，保持单一职责
+// static unsigned int allocate_data_cluster(void) {
+//     unsigned int firstDataCluster = ROOT_DIR_START_CLUSTER + ROOT_DIR_CLUSTERS;
+//     for (unsigned int i = firstDataCluster; i < MAX_CLUSTERS; i++) {
+//         if (sfat.fat[i] == FAT_FREE) {
+//             sfat.fat[i] = FAT_EOF;
+//             return i;
+//         }
+//     }
+//     return FAT_EOF;
+// }
 
 void list_root_files(void) {
     Directory *dir = &sfat.rootDirectory;
