@@ -1,6 +1,8 @@
 #ifndef SFAT_H
 #define SFAT_H
 
+#include <stdio.h>
+
 // 文件系统属性
 #define CLUSTER_SIZE 4096 // 簇大小（4KB）
 #define MAX_CLUSTERS 16384 // 最大簇数（共64MB）
