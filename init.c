@@ -19,23 +19,26 @@ int init() {
     }
 
     // 打开或创建磁盘文件
-    sfat.fd = fopen("disk.img", "r+b");  // 打开磁盘文件进行读写
+    sfat.fd = fopen("disk.img", "rb+"); // 打开磁盘文件
     if (sfat.fd == NULL) {
         logger("Disk image not found. Creating a new one...", LOG_INFO);
-        sfat.fd = fopen("disk.img", "w+b");  // 创建新文件
+
+        sfat.fd = fopen("disk.img", "w+b"); // 如果文件不存在则创建新文件
         if (sfat.fd == NULL) {
             logger("Failed to open disk image.", LOG_ERROR);
             return 1;
         }
-        format();  // 格式化磁盘
+        format(); // 格式化磁盘
         logger("Disk image created and formatted.", LOG_INFO);
+        load(); // 初始化内存结构，避免后续操作空指针
     }
     else {
         logger("Disk image found. Initializing...", LOG_INFO);
-        load();  // 加载磁盘到内存
+        load(); // 加载磁盘到内存
         logger("Initialization complete.", LOG_INFO);
     }
-    return 0;  // 添加这一行
+
+    return 0;
 }
 
 // 加载磁盘到内存
@@ -51,13 +54,25 @@ int load() {
     DirEntry *entry = (DirEntry *)buf; // 将缓冲区数据解释
     while (entry->name[0] != UNUSED) { // 循环读取根目录项，直到遇到未使用标志
         if (entry->name[0] == DELETED) { // 跳过已删除的目录项
+            entry = (DirEntry *)((char *)entry + DIRENTRY_SIZE);
             continue;
         }
         memcpy(&sfat.rootDirectory.entries[sfat.rootDirectory.count++], entry, sizeof(DirEntry));
         entry = (DirEntry *)((char *)entry + DIRENTRY_SIZE); // 移动到下一个目录项
     }
     free(buf); // 释放缓冲区
-    return 0;  // 添加这一行
+
+    // 初始化目录栈，初始时只有根目录
+    sfat.dirStack[0] = sfat.rootDirectory; // 将根目录压入目录栈
+
+    // 初始化用户表
+    buf = readCluster(USER_TABLE_CLUSTER, 1); // 从磁盘读取用户表数据到缓冲区
+    for (int i = 0; i < MAX_USERS; i++) {
+        memcpy(&sfat.Users[i], buf + i * USER_SIZE, sizeof(User)); // 将用户表数据复制到内存
+    }
+    free(buf); // 释放缓冲区
+
+    return 0;
 }
 
 // 初始化磁盘，格式化文件系统
@@ -78,7 +93,6 @@ int format()
     // 初始化FAT表（#4-19）
     sfat.fat = (unsigned int *)calloc(FAT_CLUSTERS * CLUSTER_SIZE, 1); // 分配并初始化FAT表内存
     writeCluster(sfat.fat, FAT_START_CLUSTER, FAT_CLUSTERS); // 写入FAT表到磁盘，初始状态为全0表示所有簇空闲
-    free(buf); // 释放FAT缓冲区
     
     // 初始化根目录（#20-23）
     buf = (char *)calloc(MAX_ROOT_FILES * DIRENTRY_SIZE, 1); // 分配并初始化根目录缓冲区
@@ -86,8 +100,5 @@ int format()
     free(buf); // 释放根目录缓冲区
     
     // 数据区（#24-...）已经在FAT表中设置为FAT_FREE，无需额外操作
-    buf = (char *)calloc(CLUSTER_SIZE, 1); // 分配并初始化数据区缓冲区
-    writeCluster(buf, MAX_CLUSTERS - 1, 1); // 将数据区写入磁盘，初始状态为全0表示所有簇空闲
-    free(buf); // 释放数据区缓冲区
     return 0;
 }
