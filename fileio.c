@@ -21,47 +21,62 @@ int writeCluster(const void *buf, unsigned int cluster, unsigned int n) {
 }
 
 // 寻找一个空闲簇，返回簇号，如果没有空闲簇则返回FAT_EOF
-unsigned int findFreeCluster() {
-    if (sfat.freeClusterCount == 0) { // 如果没有空闲簇，直接返回FAT_EOF
-        if (sfat.nextFreeCluster != FAT_EOF) { // 如果FAT表中还有空闲簇但计数不为0，记录日志
-            logger("FAT表与磁盘空闲簇计数不匹配，请格式化后再试。", LOG_ERROR);
-        }
-        return FAT_EOF;
-    }
-    if (sfat.freeClusterCount == 1) {
-        sfat.freeClusterCount--; // 更新空闲簇数量
-        unsigned int tmp = sfat.nextFreeCluster; // 获取下一个空闲簇号
-        sfat.nextFreeCluster = FAT_EOF; // 更新下一个空闲簇号为FAT_EOF，表示没有更多空闲簇
-        return tmp; // 返回最后一个空闲簇号
+unsigned int findFreeCluster(void) {
+    unsigned int idx;
+    unsigned int found = FAT_EOF;
+    unsigned int start = DATA_START_CLUSTER;
+
+    printf("[DEBUG] findFreeCluster called: freeClusterCount=%u nextFreeCluster=%u\n",
+           sfat.freeClusterCount, sfat.nextFreeCluster);
+
+    if (sfat.nextFreeCluster >= DATA_START_CLUSTER &&
+        sfat.nextFreeCluster < MAX_CLUSTERS) {
+        start = sfat.nextFreeCluster;
     }
 
-    unsigned int allocatedCluster = sfat.nextFreeCluster;
-    int found_cluster = -1;
-    unsigned int idx;
-    // [allocatedCluster + 1, max)
-    for (idx = allocatedCluster + 1; idx < MAX_CLUSTERS; idx++) { // 从下一个簇开始寻找空闲簇
-        if (sfat.fat[idx] == FAT_FREE) { // 如果找到一个空闲簇
-            found_cluster = 1;
+    // 从 nextFreeCluster 开始往后找
+    for (idx = start; idx < MAX_CLUSTERS; idx++) {
+        if (sfat.fat[idx] == FAT_FREE) {
+            found = idx;
             break;
         }
     }
-    // [24, allocatedCluster)，从数据区开始寻找空闲簇
-    if (found_cluster == -1) {
-        for (idx = 24; idx < allocatedCluster; idx++) { // 从数据区开始寻找空闲簇
-            if (sfat.fat[idx] == FAT_FREE) { // 如果找到一个空闲簇
-                found_cluster = 1;
+
+    // 若未找到，从数据区头部往前找
+    if (found == FAT_EOF) {
+        for (idx = DATA_START_CLUSTER; idx < start; idx++) {
+            if (sfat.fat[idx] == FAT_FREE) {
+                found = idx;
                 break;
             }
         }
     }
-    if (found_cluster == 1) {
-        sfat.nextFreeCluster = idx; // 更新下一个空闲簇号
-        sfat.freeClusterCount--; // 更新空闲簇数量
-        return allocatedCluster; // 返回分配的簇号
+
+    if (found == FAT_EOF) {
+        printf("[DEBUG] findFreeCluster: no free cluster found\n");
+        if (sfat.freeClusterCount != 0) {
+            logger("FAT表与磁盘空闲簇计数不匹配", LOG_ERROR);
+        }
+        return FAT_EOF;
     }
 
-    logger("FAT表与磁盘空闲簇计数不匹配", LOG_ERROR);
-    return FAT_EOF; // 如果没有找到空闲簇，返回FAT_EOF
+    // 关键：标记找到的簇为链尾
+    sfat.fat[found] = FAT_EOF;
+    printf("[DEBUG] findFreeCluster: allocated cluster %u, set fat[%u]=FAT_EOF\n", found, found);
+
+    // 更新状态
+    if (sfat.freeClusterCount > 0) {
+        sfat.freeClusterCount--;
+    }
+
+    // 更新 nextFreeCluster 为下一个空闲簇位置
+    unsigned int next = found + 1;
+    while (next < MAX_CLUSTERS && sfat.fat[next] != FAT_FREE) {
+        next++;
+    }
+    sfat.nextFreeCluster = (next < MAX_CLUSTERS) ? next : FAT_EOF;
+
+    return found;  // 返回找到的簇号，而不是 allocatedCluster
 }
 
 
@@ -71,22 +86,62 @@ int writeFileToDisk(DirEntry *entry, const void *buf) {
     unsigned int size = entry->size; // 获取文件大小
     unsigned int clustersNeeded = (size + CLUSTER_SIZE - 1) / CLUSTER_SIZE; // 计算需要的簇数，size向上取整
 
-    unsigned int clusters[clustersNeeded]; // 存储分配的簇号
+    printf("[DEBUG] writeFileToDisk START: size=%u clustersNeeded=%u startCluster=%u\n",
+           size, clustersNeeded, cluster);
+    printf("[DEBUG] fat[%u]=%u\n", cluster, sfat.fat[cluster]);
+
+    // 修复：确保起始簇标记为链尾
+    if (sfat.fat[cluster] != FAT_EOF) {
+        printf("[DEBUG] WARNING: fat[%u]=%u is not FAT_EOF, fixing to FAT_EOF\n", 
+               cluster, sfat.fat[cluster]);
+        sfat.fat[cluster] = FAT_EOF;
+    }
+
+    unsigned int *clusters = malloc(clustersNeeded * sizeof(unsigned int));
+    if (!clusters) {
+        logger("Memory allocation failed", LOG_ERROR);
+        return -1;
+    }
+
     int idx = 0; // 分配簇的索引
-    // 分配簇链
     logger("CLUSTERS ALLOCATING.", LOG_INFO);
-    while (cluster != FAT_EOF) { // 循环分配簇，直到分配足够的簇或遇到FAT_EOF
+    
+    printf("[DEBUG] Starting cluster collection loop: cluster=%u clustersNeeded=%u\n", cluster, clustersNeeded);
+    while (cluster != FAT_EOF) {
+         // 环检测：如果 cluster 已经在本次遍历中出现过，说明 FAT 表损坏
+    for (int j = 0; j < idx; j++) {
+        if (clusters[j] == cluster) {
+            free(clusters);
+            logger("FAT table corrupted: circular chain detected", LOG_ERROR);
+            return -1;
+        }
+    }
+        printf("[DEBUG] In loop: idx=%d clustersNeeded=%u cluster=%u\n", idx, clustersNeeded, cluster);
+        if (idx >= clustersNeeded) {
+            printf("[DEBUG] Collected enough clusters, breaking\n");
+            break;
+        }
+        clusters[idx++] = cluster;
+        unsigned int next_cluster = sfat.fat[cluster];
+        printf("[DEBUG] fat[%u]=%u next_cluster=%u\n", cluster, sfat.fat[cluster], next_cluster);
+        cluster = next_cluster;
+    }
+    
+    printf("[DEBUG] After loop: idx=%d clustersNeeded=%u\n", idx, clustersNeeded);
+    // 分配簇链
+    /*while (cluster != FAT_EOF) { // 循环分配簇，直到分配足够的簇或遇到FAT_EOF
         if (idx >= clustersNeeded) { // 如果已经分配足够的簇，跳出循环
             break;
         }
         clusters[idx++] = cluster; // 将当前簇号存储到数组中
         cluster = sfat.fat[cluster]; // 获取下一个簇号
-    }
+    }*/
     if (idx < clustersNeeded) { // 文件变大，需要分配更多的簇
         for (int i = 0; i < clustersNeeded - idx; i++) {
             unsigned int newCluster = findFreeCluster(); // 查找一个空闲簇
             if (newCluster == FAT_EOF) { // 如果没有空闲簇，返回错误
                 logger("No free cluster available.", LOG_ERROR);
+                free(clusters);
                 return -1;
             }
             sfat.fat[clusters[idx - 1 + i]] = newCluster; // 将前一个簇的FAT项指向新簇
@@ -103,6 +158,7 @@ int writeFileToDisk(DirEntry *entry, const void *buf) {
     }
 
     // 文件写入对应簇链，优先一次性写入连续簇链以优化写入性能
+    const char *data = (const char *)buf;  // 将 void* 转成 char* 以支持指针偏移
     unsigned int li = 0; // 记录当前连续区间的起点
     for (unsigned int ri = 0; ri < clustersNeeded; ri++) {
         // 触发写入的两个条件：
@@ -112,13 +168,15 @@ int writeFileToDisk(DirEntry *entry, const void *buf) {
             unsigned int count = ri - li + 1;         // 计算这一批连续了多少个簇
             unsigned int offset = li * CLUSTER_SIZE;   // 计算当前批次在内存缓冲中的偏移量
             
-            // 发起单次批量 I/O 写入
-            writeCluster(buf + offset, clusters[li], count);
+            // 发起单次批量 I/O 写入，使用转换后的 data 指针
+            writeCluster(data + offset, clusters[li], count);
             
             // 左指针跳到下一个位置
             li = ri + 1; 
         }
     }
+    
+    free(clusters);  // 释放动态分配的数组
     return 0;
 }
 

@@ -243,7 +243,86 @@ int write_file(int fd, const void *buffer, int size) {
 }
 
 int delete_file(const char *path, char user_id) {
-    return -1;
+    // 参数检查
+    if (path == NULL || path[0] == '\0') {
+        printf("[ERROR] Invalid path: path is NULL or empty\n");
+        return -1;
+    }
+
+    const char *name = path;
+    if (name[0] == '/' || name[0] == '\\') {
+        name++;
+    }
+    if (name[0] == '\0' || strchr(name, '/') != NULL || strchr(name, '\\') != NULL) {
+        printf("[ERROR] Invalid path: contains subdirectory or invalid characters\n");
+        return -1;
+    }
+
+    Directory *dir = &sfat.rootDirectory;
+    
+    // 查找文件
+    DirEntry *entry = find_entry_in_dir(dir, name);
+    if (!entry) {
+        printf("[ERROR] File not found: %s\n", name);
+        return -1;
+    }
+
+    // 检查文件是否被打开
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        if (open_file_table[i].in_use && 
+            strncmp(open_file_table[i].filename, name, MAX_FILENAME_LENGTH) == 0) {
+            printf("[ERROR] File is still open, cannot delete\n");
+            return -1;
+        }
+    }
+
+    // 释放文件占用的所有簇
+    unsigned int cluster = entry->startCluster;
+    printf("[DEBUG] Deleting file: %s, releasing clusters starting at %u\n", name, cluster);
+    while (cluster != FAT_EOF && cluster != FAT_FREE) {
+        unsigned int next_cluster = sfat.fat[cluster];
+        sfat.fat[cluster] = FAT_FREE;
+        printf("[DEBUG] Released cluster %u\n", cluster);
+        if (sfat.freeClusterCount < MAX_CLUSTERS) {
+            sfat.freeClusterCount++;
+        }
+        cluster = next_cluster;
+    }
+
+    // 删除目录项：找到这个 entry 在 dir->entries 中的位置
+    int entry_index = -1;
+    for (int i = 0; i < dir->count; i++) {
+        if (&dir->entries[i] == entry) {
+            entry_index = i;
+            break;
+        }
+    }
+
+    if (entry_index == -1) {
+        printf("[ERROR] Failed to locate file in directory\n");
+        return -1;
+    }
+
+    // 将最后一个目录项移到当前位置，然后减少计数
+    if (entry_index < dir->count - 1) {
+        memcpy(&dir->entries[entry_index], 
+               &dir->entries[dir->count - 1], 
+               sizeof(DirEntry));
+    }
+    dir->count--;
+
+    // 写回 FAT 和根目录到磁盘
+    if (writeFAT() != 0) {
+        printf("[ERROR] Failed to write FAT to disk\n");
+        return -1;
+    }
+    if (writeRootDirectory() != 0) {
+        printf("[ERROR] Failed to write root directory to disk\n");
+        return -1;
+    }
+
+    printf("[INFO] File deleted successfully: %s\n", name);
+    return 0;
 }
 
 int file_seek(int fd, int offset, int whence) {
@@ -466,4 +545,3 @@ void list_root_files(void) {
                entry->type == SUBDIR ? "DIR" : "FILE");
     }
 }
-
