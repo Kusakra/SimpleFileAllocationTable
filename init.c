@@ -6,7 +6,8 @@
 // 系统初始化，加载变量，加载磁盘
 int init() {
     // 初始化全局变量
-    currentUserID = NOT_LOGIN; // 初始化当前用户ID为未登录
+    currentUserRole = ROLE_NOT_LOGIN; // 初始化当前用户角色为未登录
+    currentUserID = ID_NOT_LOGIN; // 初始化当前用户ID为未登录
     cdi = 0; // 初始化当前目录指针索引
     NULL_FILE.modify_flag = 0; // 初始化空文件结构体的修改标志为0
     NULL_FILE.entry = NULL; // 初始化空文件结构体的目录项指针为NULL
@@ -97,9 +98,9 @@ int format()
     // 初始化用户表（#3）
     User admin;
     strcpy(admin.username, "admin");
-    strcpy(admin.password, "admin123");
-    admin.role = 0x01; // 管理员角色
-    admin.userid = 0x01;
+    strcpy(admin.password, "admin");
+    admin.role = ROLE_ADMIN; // 管理员角色
+    admin.userid = 0x01;    // 角色id从01开始
 
     buf = (char *)calloc(CLUSTER_SIZE, 1); // 分配并初始化用户表缓冲区
     memcpy(buf, &admin, sizeof(User)); // 将管理员用户数据复制到缓冲区

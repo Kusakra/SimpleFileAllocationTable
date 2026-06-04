@@ -182,7 +182,7 @@ void show_help(void) {
  * ÏÔÊ¾ÌáÊ¾·û
  */
 void print_prompt(void) {
-    if (currentUserID == NOT_LOGIN) {
+    if (currentUserID == ID_NOT_LOGIN) {
         printf("[Î´µÇÂ¼] $ ");
     } else {
         char username[32] = "unknown";
@@ -407,7 +407,7 @@ int execute_command(const char* cmd_str) {
             return ERR_INVALID;
         }
         ret = login(argv[1], argv[2]);
-        if (ret >= 0) {
+        if (ret != ID_NOT_LOGIN) {
             printf("µÇÂ¼³É¹¦£¡»¶Ó­ %s\n", argv[1]);
             return SUCCESS;
         } else {

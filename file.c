@@ -269,7 +269,7 @@ int get_open_file_size(int fd) {
 }
 
 void fileMenu(void) {
-    if (currentUserID == NOT_LOGIN) {
+    if (currentUserID == ID_NOT_LOGIN) {
         printf("[ERROR] Please login first!\n");
         return;
     }
