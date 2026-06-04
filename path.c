@@ -24,6 +24,24 @@ int parsePathSegment(const char *path, int *offset, char *segment, size_t segmen
     return 1;
 }
 
+// /home/user/docs
+// ./docs
+// ../docs
+// /
+
+Directory* resolvePath(const char *path) {
+    if (path == NULL || path[0] == '\0') {
+        return &sfat.dirStack[cdi];
+    }
+
+
+
+    Directory *dir = dirFromDisk(0);
+    return dir;
+}
+
+
+
 // 解析路径并定位最终目录，必要时从磁盘加载目录结构
 int resolvePath(const char *path, Directory *baseDir, unsigned int baseCluster, int baseIndex,
                 Directory **outDir, unsigned int *outCluster, int *outIsRoot, int *outNeedsFree) {

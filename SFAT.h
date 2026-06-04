@@ -25,6 +25,9 @@
 // 用户id定义
 #define ID_NOT_LOGIN 0xFF // 未登录用户ID
 
+// 目录名称定义
+#define ROOT_DIR "ROOT" // 根目录名称
+
 // 文件名首字符定义
 #define UNUSED 0x00 // 未使用
 #define DELETED 0xE5 // 已删除
@@ -86,6 +89,7 @@ typedef struct DirEntry {
 // 目录
 typedef struct Directory {
     DirEntry *entries;  // 目录项数组
+    char name[16]; // 目录名称（仅用于内存中，磁盘上不存储）
     int count; // 当前目录中的条目数量
 } Directory;
 

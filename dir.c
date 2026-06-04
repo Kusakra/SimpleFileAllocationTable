@@ -3,19 +3,19 @@
 #include<string.h>
 #include"SFAT.h"
 
-#define MAX_SUBDIR_ENTRIES (CLUSTER_SIZE / DIRENTRY_SIZE)
+// #define MAX_SUBDIR_ENTRIES (CLUSTER_SIZE / DIRENTRY_SIZE)
 
-unsigned int dirClusterStack[MAX_STACK_DEPTH];
-static int dirStackInited = 0;
+// unsigned int dirClusterStack[MAX_STACK_DEPTH];
+// static int dirStackInited = 0;
 
 // 延迟初始化目录簇栈，避免启动时未写入根目录簇号
-static void ensureDirStackInitialized() {
-    if (dirStackInited) {
-        return;
-    }
-    dirClusterStack[0] = ROOT_DIR_START_CLUSTER;
-    dirStackInited = 1;
-}
+// static void ensureDirStackInitialized() {
+//     if (dirStackInited) {
+//         return;
+//     }
+//     dirClusterStack[0] = ROOT_DIR_START_CLUSTER;
+//     dirStackInited = 1;
+// }
 
 // 目录项名称匹配（固定长度字段）
 static int isNameMatch(const DirEntry *entry, const char *name) {
@@ -121,16 +121,20 @@ Directory* dirFromDisk(unsigned int cluster) {
 
 // 列出目录内容
 int dir(const char *path) {
-    ensureDirStackInitialized();
-    Directory *targetDir = &sfat.dirStack[cdi];
-    unsigned int targetCluster = dirClusterStack[cdi];
-    int isRoot = (cdi == 0);
+    Directory *targetDir;
     int needsFree = 0;
-
-    // 解析路径并定位目标目录
-    if (!resolvePath(path, targetDir, targetCluster, cdi, &targetDir, &targetCluster, &isRoot, &needsFree)) {
-        logger("Path not found.", LOG_ERROR);
-        return 1;
+    // 不指定参数默认当前路径，直接读取当前目录内容
+    if (path == NULL || path[0] == '\0') {
+        targetDir = &sfat.dirStack[cdi];
+    }
+    else {
+        unsigned int targetCluster;
+        int isRoot = (cdi == 0);
+        // 解析路径并定位目标目录
+        if (!resolvePath(path, targetDir, targetCluster, cdi, &targetDir, &targetCluster, &isRoot, &needsFree)) {
+            logger("Path not found.", LOG_ERROR);
+            return 1;
+        }
     }
 
     printf("NAME\t\tTYPE\tSIZE\n");
@@ -138,12 +142,15 @@ int dir(const char *path) {
         DirEntry *entry = &targetDir->entries[i];
         if (entry->type == SUBDIR) {
             printf("%s\t\t<DIR>\t%u\n", entry->name, entry->size);
-        } else {
+        } else if (entry->type == ARCHIVE) {
+            // 文件显示扩展名和大小，目录显示<DIR>和包含的文件数
             if (entry->extension[0] != '\0') {
                 printf("%s.%s\tFILE\t%u\n", entry->name, entry->extension, entry->size);
             } else {
                 printf("%s\t\tFILE\t%u\n", entry->name, entry->size);
             }
+        } else {
+            printf("%s\t\tUNKNOWN\t%u\n", entry->name, entry->size);
         }
     }
     if (needsFree) {
@@ -155,14 +162,13 @@ int dir(const char *path) {
 
 // 创建目录
 int mkdir(const char *name) {
-    ensureDirStackInitialized();
     if (name == NULL || name[0] == '\0') {
         logger("Directory name required.", LOG_ERROR);
         return 1;
     }
 
     Directory *currentDir = &sfat.dirStack[cdi];
-    unsigned int currentCluster = dirClusterStack[cdi];
+    unsigned int currentCluster;
     int isRoot = (cdi == 0);
     int needsFree = 0;
 
@@ -227,27 +233,19 @@ int mkdir(const char *name) {
     entry.permission = READ | WRITE | EXEC;
     entry.size = 0;
     entry.startCluster = newCluster;
-
     currentDir->entries[currentDir->count++] = entry;
 
-    // 初始化新目录占用的簇
-    Directory emptyDir;
-    emptyDir.entries = (DirEntry *)calloc(MAX_SUBDIR_ENTRIES, sizeof(DirEntry));
-    emptyDir.count = 0;
-    writeDirectoryToDisk(&emptyDir, newCluster, 1);
-    free(emptyDir.entries);
-
     if (isRoot) {
-        writeDirectoryToDisk(currentDir, ROOT_DIR_START_CLUSTER, ROOT_DIR_CLUSTERS);
-        sfat.rootDirectory = *currentDir;
-        sfat.dirStack[0] = sfat.rootDirectory;
+        writeRootDirectory();
     } else {
         writeDirectoryToDisk(currentDir, currentCluster, 1);
     }
+
     if (needsFree) {
         free(currentDir->entries);
         free(currentDir);
     }
+    
     logger("Directory created.", LOG_INFO);
     return 0;
 }
@@ -261,7 +259,7 @@ int rmdir(const char *name) {
     }
 
     Directory *currentDir = &sfat.dirStack[cdi];
-    unsigned int currentCluster = dirClusterStack[cdi];
+
     int isRoot = (cdi == 0);
     int needsFree = 0;
 
@@ -278,7 +276,7 @@ int rmdir(const char *name) {
             memcpy(parentPath, name, parentLen);
         }
         strncpy(dirName, separator + 1, sizeof(dirName) - 1);
-        if (!resolvePath(parentPath, currentDir, currentCluster, cdi, &currentDir, &currentCluster, &isRoot, &needsFree)) {
+        if (!resolvePath(parentPath, currentDir, 0, cdi, &currentDir, &currentCluster, &isRoot, &needsFree)) {
             logger("Parent path not found.", LOG_ERROR);
             return 1;
         }
@@ -329,28 +327,46 @@ int rmdir(const char *name) {
     return 0;
 }
 
+int upOneLevel() {
+    if (cdi > 0) {
+        free(sfat.dirStack[cdi].entries);   // 释放内存
+        sfat.dirStack[cdi] = (Directory){0}; // 清空当前目录栈项，避免误用
+        cdi--;
+        return 0;
+    }
+    logger("Already at root directory.", LOG_WARNING);
+    return 1;
+}
+
+// /home/user
+// ./home
+// ../home
+
 // 切换目录
 int cd(const char *path) {
-    ensureDirStackInitialized();
-    if (path == NULL || path[0] == '\0' || strcmp(path, "/") == 0) {
-        cdi = 0;
-        sfat.dirStack[0] = sfat.rootDirectory;
-        dirClusterStack[0] = ROOT_DIR_START_CLUSTER;
+    if (path == NULL || path[0] == '\0') {
+        printf("Path required.\n");
+        return 1;
+    }
+
+    // 切换至根目录
+    if (strcmp(path, "/" || path[0] == '\\') == 0) {
+        while(cdi > 0) upOneLevel();
         return 0;
     }
 
-    Directory *currentDir = &sfat.dirStack[cdi];
-    unsigned int currentCluster = dirClusterStack[cdi];
-    int isRoot = (cdi == 0);
+    // 返回上一级
+    if (strcmp(path, "..") == 0) {
+        return upOneLevel();
+    }
+
+    if (strcmp(path, ".") == 0) {
+        return 0;
+    }
+
+    Directory *currentDir;
     int offset = 0;
     char segment[MAX_FILENAME_LENGTH];
-
-    if (path[0] == '/' || path[0] == '\\') {
-        cdi = 0;
-        currentDir = &sfat.rootDirectory;
-        currentCluster = ROOT_DIR_START_CLUSTER;
-        isRoot = 1;
-    }
 
     // 逐段解析并沿目录栈推进
     while (parsePathSegment(path, &offset, segment, sizeof(segment))) {
@@ -358,15 +374,10 @@ int cd(const char *path) {
             continue;
         }
         if (strcmp(segment, "..") == 0) {
-            if (cdi > 0) {
-                cdi--;
-            }
-            currentDir = &sfat.dirStack[cdi];
-            currentCluster = dirClusterStack[cdi];
-            isRoot = (cdi == 0);
-            continue;
+            upOneLevel();
         }
 
+        currentDir = &sfat.dirStack[cdi];
         int index = findEntryIndex(currentDir, segment);
         if (index < 0 || currentDir->entries[index].type != SUBDIR) {
             logger("Directory not found.", LOG_ERROR);
@@ -374,6 +385,7 @@ int cd(const char *path) {
         }
 
         Directory *nextDir = dirFromDisk(currentDir->entries[index].startCluster);
+        strcpy(nextDir->name, segment);
         if (cdi + 1 >= MAX_STACK_DEPTH) {
             logger("Directory stack overflow.", LOG_ERROR);
             free(nextDir->entries);
@@ -382,15 +394,7 @@ int cd(const char *path) {
         }
         cdi++;
         sfat.dirStack[cdi] = *nextDir;
-        dirClusterStack[cdi] = currentDir->entries[index].startCluster;
-        currentDir = &sfat.dirStack[cdi];
-        currentCluster = dirClusterStack[cdi];
-        isRoot = 0;
         free(nextDir);
-    }
-
-    if (isRoot) {
-        sfat.dirStack[0] = sfat.rootDirectory;
     }
     return 0;
 }
