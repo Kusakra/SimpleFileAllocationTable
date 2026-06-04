@@ -104,6 +104,7 @@ Directory* dirFromDisk(unsigned int cluster) {
         return NULL;
     }
     dir->entries = entries;
+    dir->startCluster = cluster;
     dir->count = count;
     return dir;
 }

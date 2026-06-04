@@ -90,6 +90,7 @@ typedef struct DirEntry {
 typedef struct Directory {
     DirEntry *entries;  // 目录项数组
     char name[16]; // 目录名称（仅用于内存中，磁盘上不存储）
+    unsigned int startCluster; // 当前目录起始簇
     int count; // 当前目录中的条目数量
 } Directory;
 

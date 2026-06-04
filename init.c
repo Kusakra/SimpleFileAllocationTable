@@ -57,6 +57,7 @@ int load() {
     // 初始化根目录
     sfat.rootDirectory.entries = (DirEntry *)calloc(MAX_ROOT_FILES, sizeof(DirEntry)); // 分配根目录项数组
     strcpy(sfat.rootDirectory.name, ROOT_DIR); // 设置根目录名称
+    sfat.rootDirectory.startCluster = ROOT_DIR_START_CLUSTER;
     sfat.rootDirectory.count = 0; // 初始化根目录项数量为0
     // 读取根目录
     buf = readCluster(ROOT_DIR_START_CLUSTER, ROOT_DIR_CLUSTERS); // 从磁盘读取根目录数据到缓冲区
