@@ -206,14 +206,14 @@ int mkdir(const char *name) {
         return 1;
     }
 
-    if (!isRoot && currentDir->count >= MAX_SUBDIR_ENTRIES) {
-        logger("Directory is full.", LOG_ERROR);
-        if (needsFree) {
-            free(currentDir->entries);
-            free(currentDir);
-        }
-        return 1;
-    }
+    // if (!isRoot && currentDir->count >= MAX_ROOT_FILES) {
+    //     logger("Directory is full.", LOG_ERROR);
+    //     if (needsFree) {
+    //         free(currentDir->entries);
+    //         free(currentDir);
+    //     }
+    //     return 1;
+    // }
 
     unsigned int newCluster = findFreeCluster();
     if (newCluster == FAT_EOF) {
@@ -252,7 +252,6 @@ int mkdir(const char *name) {
 
 // 删除目录
 int rmdir(const char *name) {
-    ensureDirStackInitialized();
     if (name == NULL || name[0] == '\0') {
         logger("Directory name required.", LOG_ERROR);
         return 1;
@@ -262,7 +261,7 @@ int rmdir(const char *name) {
 
     int isRoot = (cdi == 0);
     int needsFree = 0;
-
+    unsigned int currentCluster;
     char parentPath[256] = {0};
     char dirName[MAX_FILENAME_LENGTH] = {0};
     const char *lastSlash = strrchr(name, '/');
@@ -350,7 +349,7 @@ int cd(const char *path) {
     }
 
     // 切换至根目录
-    if (strcmp(path, "/" || path[0] == '\\') == 0) {
+    if (strcmp(path, "/") == 0 || path[0] == '\\') {
         while(cdi > 0) upOneLevel();
         return 0;
     }
