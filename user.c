@@ -35,7 +35,7 @@ void logout(void) {
     currentUserID = ID_NOT_LOGIN;
 }
 
-char current_user_id(void) {
+unsigned char current_user_id(void) {
     return currentUserID;
 }
 

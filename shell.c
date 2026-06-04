@@ -55,6 +55,23 @@ extern int file_seek(int fd, int offset, int whence);
 extern int get_open_file_size(int fd);
 
 /**
+ * 检查命令是否无需登录即可执行
+ */
+static int is_public_command(const char *cmd) {
+    if (cmd == NULL) return 0;
+    
+    // 允许无需登录的命令列表
+    if (strcmp(cmd, "login") == 0) return 1;
+    if (strcmp(cmd, "help") == 0) return 1;
+    if (strcmp(cmd, "?") == 0) return 1;
+    if (strcmp(cmd, "exit") == 0) return 1;
+    if (strcmp(cmd, "quit") == 0) return 1;
+    if (strcmp(cmd, "clear") == 0) return 1;
+    
+    return 0;
+}
+
+/**
  * 错误信息映射
  */
 static const char* error_to_string(int err) {
@@ -217,6 +234,13 @@ int execute_command(const char* cmd_str) {
     argc = split_args(cmdline, argv, ARG_MAX_COUNT);
     if (argc == 0) {
         return SUCCESS;
+    }
+
+    // ========== 登录检查 ==========
+    // 如果未登录，且不是公开命令，则拒绝执行
+    if (currentUserID == ID_NOT_LOGIN && !is_public_command(argv[0])) {
+        printf("请先登录！使用 'login <用户名> <密码>' 登录\n");
+        return ERR_PERMISSION;
     }
     
     // ========== 目录操作 ==========

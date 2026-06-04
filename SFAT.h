@@ -122,8 +122,8 @@ typedef struct SFAT {
 } SFAT;
 
 extern SFAT sfat;
-extern char currentUserRole;
-extern char currentUserID;
+extern unsigned char currentUserRole;
+extern unsigned char currentUserID;
 extern unsigned short cdi;
 extern OpenFile NULL_FILE;
 extern User NULL_USER;
