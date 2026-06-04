@@ -23,6 +23,9 @@ int writeCluster(const void *buf, unsigned int cluster, unsigned int n) {
 // 寻找一个空闲簇，返回簇号，如果没有空闲簇则返回FAT_EOF
 unsigned int findFreeCluster() {
     if (sfat.freeClusterCount == 0) { // 如果没有空闲簇，直接返回FAT_EOF
+        if (sfat.nextFreeCluster != FAT_EOF) { // 如果FAT表中还有空闲簇但计数不为0，记录日志
+            logger("FAT表与磁盘空闲簇计数不匹配，请格式化后再试。", LOG_ERROR);
+        }
         return FAT_EOF;
     }
     if (sfat.freeClusterCount == 1) {
