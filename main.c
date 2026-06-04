@@ -16,6 +16,7 @@ int main()
 {
     LOG_STATUS = LOG_INFO;
     init(); // 初始化系统，加载变量，加载磁盘
+    initDirStack();
     init_open_file_table();
 
     print_banner(); // 显示欢迎横幅

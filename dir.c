@@ -225,6 +225,7 @@ int mkdir(const char *path) {
     newEntries[1].size = 0; 
     newEntries[1].startCluster = parentCluster;
 
+    
     // 9. 数据落盘
     writeCluster(newEntries, newCluster, 1);
     free(newEntries);
@@ -234,8 +235,8 @@ int mkdir(const char *path) {
     writeFAT();
 
     // 10. 将更新后的父目录写回磁盘
-    writeDirBack(parentDir, parentCluster, freeIdx);
     parentDir->count++;
+    writeDirBack(parentDir, parentCluster, freeIdx);
 
     // 11. 释放动态分配的父目录内存（如果是从磁盘临时加载的）
     if (needsFree) {
