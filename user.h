@@ -13,7 +13,7 @@
 int init_user_system(void);
 int login(const char *username, const char *password);
 void logout(void);
-char current_user_id(void);
+unsigned char current_user_id(void);
 int check_permission(char user_id, const char *path, int perm);
 void userMenu(void);
 

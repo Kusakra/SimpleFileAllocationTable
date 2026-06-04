@@ -1,8 +1,10 @@
 #include <string.h>
 #include "user.h"
 void userMenu(void);
-static char current_login_user = NOT_LOGIN;
+// 使用main函数中的全局变量
+// static char current_login_user = ROLE_NOT_LOGIN;
 
+/*  
 int init_user_system(void) {
     // 强制初始化第一个管理员用户
     strncpy(sfat.Users[0].username, "admin", 14 - 1);
@@ -10,34 +12,35 @@ int init_user_system(void) {
     sfat.Users[0].role = ROLE_ADMIN;
     sfat.Users[0].userid = 0;
     
-    current_login_user = NOT_LOGIN;
+    current_login_user = ROLE_NOT_LOGIN;
     return 0;
 }
+    */
 
 int login(const char *username, const char *password) {
     for (int i = 0; i < MAX_USERS; i++) {
         if (sfat.Users[i].role != ROLE_NULL &&
             strcmp(sfat.Users[i].username, username) == 0 &&
             strcmp(sfat.Users[i].password, password) == 0) {
-            current_login_user = sfat.Users[i].userid;
-            currentUserID = current_login_user;
-            return current_login_user;
+            currentUserRole = sfat.Users[i].role;
+            currentUserID = sfat.Users[i].userid;
+            return currentUserID;
         }
     }
-    return NOT_LOGIN;
+    return ID_NOT_LOGIN;
 }
 
 void logout(void) {
-    current_login_user = NOT_LOGIN;
-    currentUserID = NOT_LOGIN;
+    currentUserRole = ROLE_NOT_LOGIN;
+    currentUserID = ID_NOT_LOGIN;
 }
 
-char current_user_id(void) {
-    return current_login_user;
+unsigned char current_user_id(void) {
+    return currentUserID;
 }
 
 int check_permission(char user_id, const char *path, int perm) {
-    if (user_id == NOT_LOGIN) return 0;
+    if (user_id == ID_NOT_LOGIN) return 0;
     if (user_id < 0 || user_id >= MAX_USERS) return 0;
     
     User *user = &sfat.Users[user_id];
@@ -74,7 +77,7 @@ void userMenu(void) {
                 fgets(password, sizeof(password), stdin);
                 password[strcspn(password, "\n")] = '\0';
                 result = login(username, password);
-                if (result != NOT_LOGIN) {
+                if (result != ID_NOT_LOGIN) {
                     printf("[INFO] Login successful! User ID: %d\n", result);
                 } else {
                     printf("[ERROR] Login failed. Invalid username or password.\n");
@@ -82,7 +85,7 @@ void userMenu(void) {
                 break;
 
             case 2:
-                if (current_user_id() != NOT_LOGIN) {
+                if (current_user_id() != ID_NOT_LOGIN) {
                     logout();
                     printf("[INFO] Logout successful.\n");
                 } else {
@@ -91,7 +94,7 @@ void userMenu(void) {
                 break;
 
             case 3:
-                if (current_user_id() != NOT_LOGIN) {
+                if (current_user_id() != ID_NOT_LOGIN) {
                     printf("[INFO] Current user ID: %d\n", current_user_id());
                 } else {
                     printf("[INFO] No user logged in.\n");

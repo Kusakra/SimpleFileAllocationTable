@@ -5,7 +5,8 @@
 #include"shell.h"
 
 SFAT sfat; // 定义全局SFAT结构体实例
-char currentUserID; // 当前用户ID
+unsigned char currentUserRole; // 当前用户角色
+unsigned char currentUserID; // 当前用户ID
 unsigned short cdi; // 当前目录指针索引currentDirectoryIndex，结合目录栈sfat.dirStack[cdi]
 OpenFile NULL_FILE; // 定义一个全局的空文件结构体实例，表示无效的文件
 User NULL_USER; // 定义一个全局的空用户结构体实例，表示无效的用户
@@ -16,7 +17,6 @@ int main()
     LOG_STATUS = LOG_INFO;
     init(); // 初始化系统，加载变量，加载磁盘
     init_open_file_table();
-    init_user_system();
 
     print_banner(); // 显示欢迎横幅
 

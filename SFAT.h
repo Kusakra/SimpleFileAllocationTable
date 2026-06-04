@@ -18,11 +18,12 @@
 
 // 用户角色定义
 #define ROLE_NULL 0x00 // 空，代表该项未使用
+#define ROLE_NOT_LOGIN 0x44  // 未登录
 #define ROLE_ADMIN 0x48 // 管理员
 #define ROLE_USER 0x52 // 普通用户
 
-// 用户ID定义
-#define NOT_LOGIN 0x44  // 未登录
+// 用户id定义
+#define ID_NOT_LOGIN 0xFF // 未登录用户ID
 
 // 文件名首字符定义
 #define UNUSED 0x00 // 未使用
@@ -121,7 +122,8 @@ typedef struct SFAT {
 } SFAT;
 
 extern SFAT sfat;
-extern char currentUserID;
+extern unsigned char currentUserRole;
+extern unsigned char currentUserID;
 extern unsigned short cdi;
 extern OpenFile NULL_FILE;
 extern User NULL_USER;
