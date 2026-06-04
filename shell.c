@@ -211,7 +211,9 @@ void print_prompt(void) {
                 break;
             }
         }
-        printf("[%s] $ ", username);
+        char *path = pwd();
+        printf("%s@ %s $ ", username, path);
+        free(path);
     }
 }
 
@@ -244,7 +246,7 @@ int execute_command(const char* cmd_str) {
     }
     
     // ========== 目录操作 ==========
-    if (strcmp(argv[0], "mkdir") == 0) {
+    if (strcmp(argv[0], "mkdir") == 0 || strcmp(argv[0], "md") == 0) {
         if (argc < 2) {
             printf("用法: mkdir <路径>\n");
             return ERR_INVALID;
@@ -276,10 +278,10 @@ int execute_command(const char* cmd_str) {
     }
     
     else if (strcmp(argv[0], "pwd") == 0) {
-        char buf[MAX_PATH_LEN];
-        char* result = getcwd(buf, sizeof(buf));
+        char* result = pwd();
         if (result != NULL) {
-            printf("%s\n", buf);
+            printf("%s\n", result);
+            free(result);
         } else {
             printf("获取当前目录失败\n");
         }

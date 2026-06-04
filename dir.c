@@ -466,15 +466,17 @@ int dir(const char *path) {
     return 0;
 }
 
-void pwd(void) {
+char* pwd() {
     if (cdi == 0) {
-        printf("/\n");
-        return;
+        return "/";
     }
 
+    char *path = (char *)calloc(cdi * 16, 1);
+    path[0] = '\0';
     // 遍历目录栈，打印出完整的虚拟路径
     for (int i = 1; i <= cdi; i++) {
-        printf("/%s", sfat.dirStack[i].name);
+        strcat(path, "/");
+        strcat(path, sfat.dirStack[i].name);
     }
-    printf("\n");
+    return path;
 }

@@ -152,6 +152,7 @@ extern int mkdir(const char *name);
 extern int rmdir(const char *name);
 extern int dir(const char *path);
 extern int cd(const char *path);
+extern char* pwd();
 // path.c
 extern int parsePathSegment(const char *path, int *offset, char *segment, size_t segmentSize);
 extern int resolvePath(const char *path, Directory *baseDir, unsigned int baseCluster, int baseIndex,
