@@ -16,7 +16,10 @@
                 "${workspaceFolder}\\user.c",
                 "${workspaceFolder}\\shell.c",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${fileDirname}\\${fileBasenameNoExtension}.exe",
+
+                "-finput-charset=UTF-8",
+                "-fexec-charset=UTF-8"
             ],
             "options": {
                 "cwd": "${fileDirname}"

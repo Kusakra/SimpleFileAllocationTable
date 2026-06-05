@@ -435,6 +435,9 @@ int rmdir(const char *name) {
     /* 标记目录项为删除，强制转换为 unsigned char 防止溢出对比问题 */
     entry->name[0] = (char)DELETED;
     current->count--;
+    if (cdi == 0) {
+        memcpy(&sfat.rootDirectory, current, sizeof(Directory));
+    }
 
     writeDirBack(current, currentCluster, idx);
     return 0;
