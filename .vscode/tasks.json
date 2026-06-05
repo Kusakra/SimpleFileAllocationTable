@@ -6,6 +6,8 @@
             "command": "E:\\Dev-Cpp\\MinGW32\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
+                "-finput-charset=UTF-8",
+                "-fexec-charset=GBK",
                 "-g",
                 "${workspaceFolder}\\main.c",
                 "${workspaceFolder}\\init.c",
@@ -16,10 +18,7 @@
                 "${workspaceFolder}\\user.c",
                 "${workspaceFolder}\\shell.c",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe",
-
-                "-finput-charset=UTF-8",
-                "-fexec-charset=UTF-8"
+                "${fileDirname}\\${fileBasenameNoExtension}.exe"
             ],
             "options": {
                 "cwd": "${fileDirname}"

@@ -179,7 +179,7 @@ static int writeDirBack(Directory *dir, unsigned int startCluster, int entryIdx)
         c = sfat.fat[c];
     }
     
-    void *block = malloc(CLUSTER_SIZE);
+    void *block = calloc(CLUSTER_SIZE, 1);
     (char*)dir->entries + clusterOffset * CLUSTER_SIZE;
     unsigned int startidx = clusterOffset * epc;
     for (int i=startidx; i<=entryIdx; i++) {
@@ -345,7 +345,7 @@ int mkdir(const char *path) {
 
     
     // 9. 数据落盘
-    void *buf = malloc(CLUSTER_SIZE);
+    void *buf = calloc(CLUSTER_SIZE, 1);
     for (int i=0; i<2; i++) {
         memcpy(buf + i * DIRENTRY_SIZE, &newEntries[i], sizeof(DirEntry));
     }

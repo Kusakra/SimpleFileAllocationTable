@@ -147,8 +147,20 @@ int writeUserTable() {
     return 0;
 }
 
+int writeConfig() {
+    // 写入配置
+    char *buf = (char *)calloc(CLUSTER_SIZE, 1); // 分配并初始化配置区缓冲区
+    memcpy(buf, &sfat.nextFreeCluster, sizeof(unsigned int)); // 数据区起始簇号
+    memcpy(buf + 4, &sfat.freeClusterCount, sizeof(unsigned int)); // 数据区空闲簇数量
+    writeCluster(buf, 1, 1); // 将配置区数据写入磁盘
+    free(buf); // 释放配置区缓冲区    
+}
+
 // 保存完整数据到磁盘
 int saveToDisk() {
+    // 写入配置
+    writeConfig();
+    
     // 写入FAT表
     writeFAT();
 

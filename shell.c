@@ -516,6 +516,7 @@ int execute_command(const char* cmd_str) {
     }
     
     else if (strcmp(argv[0], "exit") == 0 || strcmp(argv[0], "quit") == 0) {
+        saveToDisk();
         printf("正在退出...\n");
         exit(0);
         return SUCCESS;
