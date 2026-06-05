@@ -40,7 +40,8 @@ int create_file(const char *path, char user_id) {
         return -1;
     }
 
-    Directory *dir = &sfat.rootDirectory;
+    //Directory *dir = &sfat.rootDirectory;
+    Directory *dir = (cdi == 0) ? &sfat.rootDirectory : &sfat.dirStack[cdi];
     if (find_entry_in_dir(dir, name) != NULL) {
         return -1;
     }
@@ -84,7 +85,8 @@ int open_file(const char *path, FileMode mode, char user_id) {
         return -1;
     }
 
-    Directory *dir = &sfat.rootDirectory;
+    //Directory *dir = &sfat.rootDirectory;
+    Directory *dir = (cdi == 0) ? &sfat.rootDirectory : &sfat.dirStack[cdi];
     DirEntry *entry = find_entry_in_dir(dir, name);
     if (!entry) {
         return -1;
@@ -258,7 +260,8 @@ int delete_file(const char *path, char user_id) {
         return -1;
     }
 
-    Directory *dir = &sfat.rootDirectory;
+    //Directory *dir = &sfat.rootDirectory;
+    Directory *dir = (cdi == 0) ? &sfat.rootDirectory : &sfat.dirStack[cdi];
     
     // 查找文件
     DirEntry *entry = find_entry_in_dir(dir, name);
