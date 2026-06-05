@@ -476,7 +476,7 @@ int upOneLevel() {
 int cd(const char *path) {
     if (path == NULL || path[0] == '\0') {
         printf("Path required.\n");
-        return 1;
+        return -5;
     }
 
     // 切换至根目录
@@ -511,7 +511,7 @@ int cd(const char *path) {
         int index = findEntryIndex(currentDir, segment);
         if (index < 0 || currentDir->entries[index].type != SUBDIR) {
             logger("Directory not found.", LOG_ERROR);
-            return 1;
+            return -1;
         }
 
         unsigned int cluster = currentDir->entries[index].startCluster;

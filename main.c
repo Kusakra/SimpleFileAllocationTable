@@ -62,8 +62,10 @@ void logger(const char *message, char level) {
     switch (level) {
         case LOG_ERROR:
             printf("[ERROR] %s\n", message);
+            break;
         case LOG_WARNING:
             printf("[WARNING] %s\n", message);
+            break;
         case LOG_INFO:
             printf("[INFO] %s\n", message);
             break;
