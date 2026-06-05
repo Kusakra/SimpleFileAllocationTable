@@ -257,7 +257,7 @@ int execute_command(const char* cmd_str) {
         return ret;
     }
     
-    else if (strcmp(argv[0], "rmdir") == 0) {
+    else if (strcmp(argv[0], "rmdir") == 0 || strcmp(argv[0], "rm") == 0) {
         if (argc < 2) {
             printf("用法: rmdir <路径>\n");
             return ERR_INVALID;
